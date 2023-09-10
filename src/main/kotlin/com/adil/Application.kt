@@ -1,6 +1,7 @@
 package com.adil
 
 import com.adil.routes.createRoomRoute
+import com.adil.routes.getRoomsRoute
 import com.adil.session.DrawingSession
 import io.ktor.application.*
 import io.ktor.features.*
@@ -25,9 +26,10 @@ fun Application.module() {
             call.sessions.set(DrawingSession(clientId, generateNonce()))
         }
     }
-
+    install(WebSockets)
     install(Routing) {
         createRoomRoute()
+        getRoomsRoute()
     }
 
     install(ContentNegotiation) {
@@ -36,5 +38,4 @@ fun Application.module() {
     }
 
     install(CallLogging)
-    install(WebSockets)
 }
