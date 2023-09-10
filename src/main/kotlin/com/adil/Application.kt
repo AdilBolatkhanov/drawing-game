@@ -1,6 +1,7 @@
 package com.adil
 
 import com.adil.routes.createRoomRoute
+import com.adil.routes.gameWebSocketRoute
 import com.adil.routes.getRoomsRoute
 import com.adil.routes.joinRoomRoute
 import com.adil.session.DrawingSession
@@ -34,6 +35,7 @@ fun Application.module() {
         createRoomRoute()
         getRoomsRoute()
         joinRoomRoute()
+        gameWebSocketRoute()
     }
 
     install(ContentNegotiation) {

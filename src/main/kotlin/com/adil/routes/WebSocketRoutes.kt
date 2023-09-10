@@ -1,12 +1,13 @@
 package com.adil.routes
 
+import com.adil.data.Player
 import com.adil.data.Room
-import com.adil.data.models.BaseModel
-import com.adil.data.models.ChatMessage
-import com.adil.data.models.DrawData
+import com.adil.data.models.*
 import com.adil.gson
+import com.adil.other.Constants.TYPE_ANNOUNCEMENT
 import com.adil.other.Constants.TYPE_CHAT_MESSAGE
 import com.adil.other.Constants.TYPE_DRAW_DATA
+import com.adil.other.Constants.TYPE_JOIN_ROOM_HANDSHAKE
 import com.adil.server
 import com.adil.session.DrawingSession
 import com.google.gson.JsonParser
@@ -20,12 +21,31 @@ fun Route.gameWebSocketRoute() {
     route("/ws/draw") {
         standardWebSocket { socket, clientId, message, payload ->
             when (payload) {
+                is JoinRoomHandshake -> {
+                    val room = server.rooms[payload.roomName]
+                    if (room == null) {
+                        val gameError = GameError(GameError.ERROR_ROOM_NOT_FOUND)
+                        socket.send(Frame.Text(gson.toJson(gameError)))
+                        return@standardWebSocket
+                    }
+                    val player = Player(
+                        payload.username,
+                        socket,
+                        payload.clientId
+                    )
+                    server.playerJoined(player)
+                    if (!room.containsPlayer(player.username)) {
+                        room.addPlayer(player.clientId, player.username, socket)
+                    }
+                }
+
                 is DrawData -> {
                     val room = server.rooms[payload.roomName] ?: return@standardWebSocket
-                    if (room.phase == Room.Phase.GAME_RUNNING){
+                    if (room.phase == Room.Phase.GAME_RUNNING) {
                         room.broadcastToAllExcept(message, clientId)
                     }
                 }
+
                 is ChatMessage -> {
 
                 }
@@ -49,13 +69,15 @@ fun Route.standardWebSocket(
             return@webSocket
         }
         try {
-            incoming.consumeEach {frame ->
+            incoming.consumeEach { frame ->
                 if (frame is Frame.Text) {
                     val message = frame.readText()
                     val jsonObject = JsonParser.parseString(message).asJsonObject
                     val type = when (jsonObject.get("type").asString) {
                         TYPE_CHAT_MESSAGE -> ChatMessage::class.java
                         TYPE_DRAW_DATA -> DrawData::class.java
+                        TYPE_ANNOUNCEMENT -> Announcement::class.java
+                        TYPE_JOIN_ROOM_HANDSHAKE -> JoinRoomHandshake::class.java
                         else -> BaseModel::class.java
                     }
                     val payload = gson.fromJson(message, type)
