@@ -2,6 +2,7 @@ package com.adil
 
 import com.adil.routes.createRoomRoute
 import com.adil.routes.getRoomsRoute
+import com.adil.routes.joinRoomRoute
 import com.adil.session.DrawingSession
 import io.ktor.application.*
 import io.ktor.features.*
@@ -30,6 +31,7 @@ fun Application.module() {
     install(Routing) {
         createRoomRoute()
         getRoomsRoute()
+        joinRoomRoute()
     }
 
     install(ContentNegotiation) {
