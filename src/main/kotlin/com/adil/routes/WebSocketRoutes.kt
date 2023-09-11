@@ -7,6 +7,7 @@ import com.adil.gson
 import com.adil.other.Constants.TYPE_ANNOUNCEMENT
 import com.adil.other.Constants.TYPE_CHAT_MESSAGE
 import com.adil.other.Constants.TYPE_DRAW_DATA
+import com.adil.other.Constants.TYPE_GAME_STATE
 import com.adil.other.Constants.TYPE_JOIN_ROOM_HANDSHAKE
 import com.adil.other.Constants.TYPE_PHASE_CHANGE
 import com.adil.server
@@ -86,6 +87,7 @@ fun Route.standardWebSocket(
                         TYPE_ANNOUNCEMENT -> Announcement::class.java
                         TYPE_JOIN_ROOM_HANDSHAKE -> JoinRoomHandshake::class.java
                         TYPE_PHASE_CHANGE -> PhaseChange::class.java
+                        TYPE_GAME_STATE -> GameState::class.java
                         else -> BaseModel::class.java
                     }
                     val payload = gson.fromJson(message, type)

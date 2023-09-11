@@ -2,8 +2,11 @@ package com.adil.data
 
 import com.adil.data.models.Announcement
 import com.adil.data.models.ChosenWord
+import com.adil.data.models.GameState
 import com.adil.data.models.PhaseChange
 import com.adil.gson
+import com.adil.other.transformToUnderscores
+import com.adil.other.words
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.*
 
@@ -18,6 +21,7 @@ data class Room(
     private var drawingPlayer: Player? = null
     private var winningPlayers = listOf<String>()
     private var word: String? = null
+    private var curWords: List<String>? = null
 
     // TODO Get rid of this listener
     private var phaseChangeListener: ((Phase) -> Unit)? = null
@@ -150,7 +154,28 @@ data class Room(
     }
 
     private fun gameRunning() {
+        winningPlayers = listOf()
+        val wordToSend = word ?: curWords?.random() ?: words.random()
+        val wordWithUnderscores = wordToSend.transformToUnderscores()
+        val drawingUsername = (drawingPlayer ?: players.random()).username
+        val gameStateForDrawingPlayer = GameState(
+            drawingUsername,
+            wordToSend
+        )
+        val gameStateForGuessingPlayers = GameState(
+            drawingUsername,
+            wordWithUnderscores
+        )
+        GlobalScope.launch {
+            broadcastToAllExcept(
+                gson.toJson(gameStateForGuessingPlayers),
+                drawingPlayer?.clientId ?: players.random().clientId
+            )
+            drawingPlayer?.socket?.send(Frame.Text(gson.toJson(gameStateForDrawingPlayer)))
 
+            timeAndNotify(DELAY_GAME_RUNNING_TO_SHOW_WORD)
+            println("Drawing phase in room $name started. It'll last ${DELAY_GAME_RUNNING_TO_SHOW_WORD / 1000}s")
+        }
     }
 
     private fun showWord() {
