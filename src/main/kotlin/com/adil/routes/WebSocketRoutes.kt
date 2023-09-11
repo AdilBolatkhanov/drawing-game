@@ -31,13 +31,18 @@ fun Route.gameWebSocketRoute() {
                     }
                     val player = Player(
                         payload.username,
-                        socket,
-                        payload.clientId
+                        payload.clientId,
+                        socket
                     )
                     server.playerJoined(player)
                     if (!room.containsPlayer(player.username)) {
                         room.addPlayer(player.clientId, player.username, socket)
                     }
+                }
+
+                is ChosenWord -> {
+                    val room = server.rooms[payload.roomName] ?: return@standardWebSocket
+                    room.setWordAndSwitchToGameRunning(payload.chosenWord)
                 }
 
                 is DrawData -> {
@@ -74,6 +79,7 @@ fun Route.standardWebSocket(
                 if (frame is Frame.Text) {
                     val message = frame.readText()
                     val jsonObject = JsonParser.parseString(message).asJsonObject
+                    // TODO Polymorphic serialization
                     val type = when (jsonObject.get("type").asString) {
                         TYPE_CHAT_MESSAGE -> ChatMessage::class.java
                         TYPE_DRAW_DATA -> DrawData::class.java

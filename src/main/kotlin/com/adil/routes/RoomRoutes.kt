@@ -12,6 +12,7 @@ import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 
+// TODO Create proper structure of endpoints with extensions
 fun Route.createRoomRoute() {
     route("/api/createRoom") {
         post {

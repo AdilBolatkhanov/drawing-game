@@ -8,6 +8,7 @@ data class Announcement(
     val announcementType: Int
 ): BaseModel(TYPE_ANNOUNCEMENT) {
     companion object {
+        // TODO Maybe enums?
         const val TYPE_PLAYER_GUESSED_WORD = 0
         const val TYPE_PLAYER_JOINED = 1
         const val TYPE_PLAYER_LEFT = 2

@@ -26,6 +26,7 @@ fun Application.module() {
 
     intercept(ApplicationCallPipeline.Features) {
         if (call.sessions.get<DrawingSession>() == null) {
+            //TODO Handle the case when client_id is not passed
             val clientId = call.parameters["client_id"] ?: ""
             call.sessions.set(DrawingSession(clientId, generateNonce()))
         }

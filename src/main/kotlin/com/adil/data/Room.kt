@@ -10,6 +10,7 @@ import kotlinx.coroutines.*
 data class Room(
     val name: String,
     val maxPlayers: Int,
+    // TODO Make players list thread safe - concurrency
     var players: List<Player> = listOf()
 ) {
 
@@ -18,6 +19,7 @@ data class Room(
     private var winningPlayers = listOf<String>()
     private var word: String? = null
 
+    // TODO Get rid of this listener
     private var phaseChangeListener: ((Phase) -> Unit)? = null
     var phase = Phase.WAITING_FOR_PLAYERS
         set(value) {
@@ -58,13 +60,14 @@ data class Room(
     }
 
     suspend fun addPlayer(clientId: String, username: String, socket: WebSocketSession): Player {
-        val player = Player(username, socket, clientId)
+        val player = Player(username, clientId, socket)
         players = players + player
 
         if (players.size == 1) {
             phase = Phase.WAITING_FOR_PLAYERS
         } else if (players.size == 2){
             phase = Phase.WAITING_FOR_START
+            // TODO Do we need shuffle?
             players = players.shuffled()
         } else if (phase == Phase.WAITING_FOR_START && players.size == maxPlayers) {
             phase = Phase.NEW_ROUND
@@ -95,6 +98,7 @@ data class Room(
 
     private fun timeAndNotify(ms: Long) {
         timerJob?.cancel()
+        // TODO Our own scope, think about it
         timerJob = GlobalScope.launch {
             val phaseChange = PhaseChange(
                 phase,
@@ -120,6 +124,7 @@ data class Room(
     }
 
     private fun waitingForPlayers() {
+        // TODO Our own scope, think about it
         GlobalScope.launch {
             val phaseChange = PhaseChange(
                 Phase.WAITING_FOR_PLAYERS,
@@ -165,6 +170,7 @@ data class Room(
         }
     }
 
+    // TODO Make sealed class instead
     enum class Phase {
         WAITING_FOR_PLAYERS,
         WAITING_FOR_START,
