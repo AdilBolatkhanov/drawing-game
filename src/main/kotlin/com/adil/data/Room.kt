@@ -27,6 +27,7 @@ data class Room(
     private var startTime = 0L
 
     private val playerRemoveJobs = ConcurrentHashMap<String, Job>()
+    // TODO data class instead of pair
     private val leftPlayers = ConcurrentHashMap<String, Pair<Player, Int>>()
 
     // TODO Get rid of this listener
@@ -106,8 +107,31 @@ data class Room(
     }
 
     suspend fun addPlayer(clientId: String, username: String, socket: WebSocketSession): Player {
-        val player = Player(username, clientId, socket)
-        players = players + player
+        // TODO Do we need to restore player to its previous index? Do we need ordering of the players?
+        var indexToAdd = players.size - 1
+        val player = if (leftPlayers.containsKey(clientId)) {
+            val leftPlayer = leftPlayers[clientId]
+            leftPlayer?.first?.let { prevSavedCurPlayer ->
+                prevSavedCurPlayer.socket = socket
+                prevSavedCurPlayer.isDrawing = drawingPlayer?.clientId == clientId
+                indexToAdd = leftPlayer.second
+
+                playerRemoveJobs[clientId]?.cancel()
+                playerRemoveJobs.remove(clientId)
+                leftPlayers.remove(clientId)
+                prevSavedCurPlayer
+            } ?: Player(username, clientId, socket)
+        } else {
+            Player(username, clientId, socket)
+        }
+        indexToAdd = when {
+            players.isEmpty() -> 0
+            indexToAdd >= players.size -> players.size - 1
+            else -> indexToAdd
+        }
+        val tmpPlayers = players.toMutableList()
+        tmpPlayers.add(indexToAdd, player)
+        players = tmpPlayers.toMutableList()
 
         if (players.size == 1) {
             phase = Phase.WAITING_FOR_PLAYERS
