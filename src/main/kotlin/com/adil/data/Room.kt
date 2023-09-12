@@ -3,6 +3,7 @@ package com.adil.data
 import com.adil.data.models.*
 import com.adil.gson
 import com.adil.other.getRandowWords
+import com.adil.other.matchesWord
 import com.adil.other.transformToUnderscores
 import com.adil.other.words
 import io.ktor.http.cio.websocket.*
@@ -21,6 +22,7 @@ data class Room(
     private var word: String? = null
     private var curWords: List<String>? = null
     private var drawingPlayerIndex = 0
+    private var startTime = 0L
 
     // TODO Get rid of this listener
     private var phaseChangeListener: ((Phase) -> Unit)? = null
@@ -62,6 +64,40 @@ data class Room(
         }
     }
 
+    suspend fun checkWordAndNotifyPlayers(message: ChatMessage): Boolean {
+        if (isGuessCorrect(message)) {
+            val guessingTime = System.currentTimeMillis() - startTime
+            val timePercentageLeft = 1L - guessingTime.toFloat() / DELAY_GAME_RUNNING_TO_SHOW_WORD
+            val score = GUESS_SCORE_DEFAULT + GUESS_SCORE_PERCENTAGE_MULTIPLIER * timePercentageLeft
+            val player = players.find { it.username == message.from }
+
+            player?.let {
+                it.score += score.toInt()
+            }
+            drawingPlayer?.let {
+                it.score += GUESS_SCORE_FOR_DRAWING_PLAYER / players.size
+            }
+
+            val announcement = Announcement(
+                "${message.from} has guessed it!",
+                System.currentTimeMillis(),
+                Announcement.TYPE_PLAYER_GUESSED_WORD
+            )
+            broadcast(gson.toJson(announcement))
+            val isRoundOver = addWinningPlayer(message.from)
+            if (isRoundOver){
+                val roundOverAnnouncement = Announcement(
+                    "Everybody guessed it! New round is starting..",
+                    System.currentTimeMillis(),
+                    Announcement.TYPE_EVERYBODY_GUESSED_IT
+                )
+                broadcast(gson.toJson(roundOverAnnouncement))
+            }
+            return true
+        }
+        return false
+    }
+
     suspend fun addPlayer(clientId: String, username: String, socket: WebSocketSession): Player {
         val player = Player(username, clientId, socket)
         players = players + player
@@ -70,7 +106,7 @@ data class Room(
             phase = Phase.WAITING_FOR_PLAYERS
         } else if (players.size == 2){
             phase = Phase.WAITING_FOR_START
-            // TODO Do we need shuffle?
+            // TODO Do we really need to shuffle?
             players = players.shuffled()
         } else if (phase == Phase.WAITING_FOR_START && players.size == maxPlayers) {
             phase = Phase.NEW_ROUND
@@ -103,6 +139,7 @@ data class Room(
         timerJob?.cancel()
         // TODO Our own scope, think about it
         timerJob = GlobalScope.launch {
+            startTime = System.currentTimeMillis()
             val phaseChange = PhaseChange(
                 phase,
                 ms,
@@ -197,6 +234,23 @@ data class Room(
         else drawingPlayerIndex = 0
      }
 
+    private fun addWinningPlayer(username: String): Boolean {
+        winningPlayers = winningPlayers + username
+        if (winningPlayers.size == players.size - 1){
+            phase = Phase.NEW_ROUND
+            return true
+        }
+        return false
+    }
+
+    private fun isGuessCorrect(guess: ChatMessage): Boolean {
+        // TODO Handle the case when player who guessed the word before
+        //  doesn't send it again to the whole group
+        return guess.matchesWord(word ?: return false) &&
+                !winningPlayers.contains(guess.from) &&
+                guess.from != drawingPlayer?.username && phase == Phase.GAME_RUNNING
+    }
+
     private fun showWord() {
         GlobalScope.launch {
             if (winningPlayers.isEmpty()) {
@@ -233,6 +287,9 @@ data class Room(
         const val DELAY_SHOW_WORD_TO_NEW_ROUND = 10000L
 
         const val PENALTY_NOBODY_GUESSED_IT = 50
+        const val GUESS_SCORE_DEFAULT = 50
+        const val GUESS_SCORE_PERCENTAGE_MULTIPLIER = 50
+        const val GUESS_SCORE_FOR_DRAWING_PLAYER = 50
     }
 }
 
