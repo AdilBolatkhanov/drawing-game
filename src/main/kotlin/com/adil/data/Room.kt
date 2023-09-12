@@ -1,10 +1,8 @@
 package com.adil.data
 
-import com.adil.data.models.Announcement
-import com.adil.data.models.ChosenWord
-import com.adil.data.models.GameState
-import com.adil.data.models.PhaseChange
+import com.adil.data.models.*
 import com.adil.gson
+import com.adil.other.getRandowWords
 import com.adil.other.transformToUnderscores
 import com.adil.other.words
 import io.ktor.http.cio.websocket.*
@@ -22,6 +20,7 @@ data class Room(
     private var winningPlayers = listOf<String>()
     private var word: String? = null
     private var curWords: List<String>? = null
+    private var drawingPlayerIndex = 0
 
     // TODO Get rid of this listener
     private var phaseChangeListener: ((Phase) -> Unit)? = null
@@ -150,7 +149,13 @@ data class Room(
     }
 
     private fun newRound() {
-
+        curWords = getRandowWords(3)
+        val newWords = NewWords(curWords!!)
+        nextDrawingPlayer()
+        GlobalScope.launch {
+            drawingPlayer?.socket?.send(Frame.Text(gson.toJson(newWords)))
+            timeAndNotify(DELAY_NEW_ROUND_TO_GAME_RUNNING)
+        }
     }
 
     private fun gameRunning() {
@@ -177,6 +182,20 @@ data class Room(
             println("Drawing phase in room $name started. It'll last ${DELAY_GAME_RUNNING_TO_SHOW_WORD / 1000}s")
         }
     }
+
+    private fun nextDrawingPlayer() {
+        drawingPlayer?.isDrawing = false
+        if (players.isEmpty()) {
+            return
+        }
+
+        drawingPlayer = if (drawingPlayerIndex <= players.size - 1) {
+            players[drawingPlayerIndex]
+        } else players.last()
+
+        if (drawingPlayerIndex < players.size - 1) drawingPlayerIndex++
+        else drawingPlayerIndex = 0
+     }
 
     private fun showWord() {
         GlobalScope.launch {
