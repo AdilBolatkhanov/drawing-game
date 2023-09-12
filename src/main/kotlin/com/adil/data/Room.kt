@@ -6,8 +6,10 @@ import com.adil.other.getRandowWords
 import com.adil.other.matchesWord
 import com.adil.other.transformToUnderscores
 import com.adil.other.words
+import com.adil.server
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.*
+import java.util.concurrent.ConcurrentHashMap
 
 data class Room(
     val name: String,
@@ -23,6 +25,9 @@ data class Room(
     private var curWords: List<String>? = null
     private var drawingPlayerIndex = 0
     private var startTime = 0L
+
+    private val playerRemoveJobs = ConcurrentHashMap<String, Job>()
+    private val leftPlayers = ConcurrentHashMap<String, Pair<Player, Int>>()
 
     // TODO Get rid of this listener
     private var phaseChangeListener: ((Phase) -> Unit)? = null
@@ -128,8 +133,37 @@ data class Room(
     }
 
     fun removePlayer(clientId: String) {
+        val player = players.find { it.clientId == clientId } ?: return
+        val index = players.indexOf(player)
+        leftPlayers[clientId] = player to index
+        players = players - player
+
+        playerRemoveJobs[clientId] = GlobalScope.launch {
+            delay(PLAYER_REMOVE_TIME)
+            val playerToRemove = leftPlayers[clientId]
+            leftPlayers.remove(clientId)
+            playerToRemove?.let { (player, _) ->
+                players = players - player
+            }
+            playerRemoveJobs.remove(clientId)
+        }
+
+        val announcement = Announcement(
+            "${player.username} left the party",
+            System.currentTimeMillis(),
+            Announcement.TYPE_PLAYER_LEFT
+        )
+
         GlobalScope.launch {
             broadcastPlayerStates()
+            broadcast(gson.toJson(announcement))
+            if (players.size == 1) {
+                phase = Phase.WAITING_FOR_PLAYERS
+                timerJob?.cancel()
+            } else if (players.isEmpty()) {
+                kill()
+                server.rooms.remove(name)
+            }
         }
     }
 
@@ -315,6 +349,11 @@ data class Room(
         }
     }
 
+    private fun kill() {
+        playerRemoveJobs.values.forEach { it.cancel() }
+        timerJob?.cancel()
+    }
+
     // TODO Make sealed class instead
     enum class Phase {
         WAITING_FOR_PLAYERS,
@@ -327,6 +366,8 @@ data class Room(
     companion object {
 
         const val UPDATE_TIME_FREQUENCY = 1000L
+
+        const val PLAYER_REMOVE_TIME = 60000L
 
         const val DELAY_WAITING_FOR_START_TO_NEW_ROUND = 10000L
         const val DELAY_NEW_ROUND_TO_GAME_RUNNING = 20000L
