@@ -10,6 +10,7 @@ import com.adil.other.Constants.TYPE_DRAW_DATA
 import com.adil.other.Constants.TYPE_GAME_STATE
 import com.adil.other.Constants.TYPE_JOIN_ROOM_HANDSHAKE
 import com.adil.other.Constants.TYPE_PHASE_CHANGE
+import com.adil.other.Constants.TYPE_PING
 import com.adil.server
 import com.adil.session.DrawingSession
 import com.google.gson.JsonParser
@@ -38,6 +39,10 @@ fun Route.gameWebSocketRoute() {
                     server.playerJoined(player)
                     if (!room.containsPlayer(player.username)) {
                         room.addPlayer(player.clientId, player.username, socket)
+                    } else {
+                        val playerInRoom = room.players.find { it.clientId == clientId }
+                        playerInRoom?.socket = socket
+                        playerInRoom?.startPinging()
                     }
                 }
 
@@ -58,6 +63,10 @@ fun Route.gameWebSocketRoute() {
                     if (!room.checkWordAndNotifyPlayers(payload)) {
                         room.broadcast(message)
                     }
+                }
+
+                is Ping -> {
+                    server.players[clientId]?.receivePong()
                 }
             }
         }
@@ -91,6 +100,7 @@ fun Route.standardWebSocket(
                         TYPE_JOIN_ROOM_HANDSHAKE -> JoinRoomHandshake::class.java
                         TYPE_PHASE_CHANGE -> PhaseChange::class.java
                         TYPE_GAME_STATE -> GameState::class.java
+                        TYPE_PING -> Ping::class.java
                         else -> BaseModel::class.java
                     }
                     val payload = gson.fromJson(message, type)

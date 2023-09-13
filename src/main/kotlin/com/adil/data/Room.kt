@@ -131,7 +131,7 @@ data class Room(
         }
         val tmpPlayers = players.toMutableList()
         tmpPlayers.add(indexToAdd, player)
-        players = tmpPlayers.toMutableList()
+        players = tmpPlayers.toList()
 
         if (players.size == 1) {
             phase = Phase.WAITING_FOR_PLAYERS
