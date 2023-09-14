@@ -10,5 +10,6 @@ data class DrawData(
     val fromY: Float,
     val toX: Float,
     val toY: Float,
+    // TODO Use enums
     val motionEvent: Int
 ): BaseModel(TYPE_DRAW_DATA)

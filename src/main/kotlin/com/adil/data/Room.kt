@@ -17,6 +17,17 @@ data class Room(
     // TODO Make players list thread safe - concurrency
     var players: List<Player> = listOf()
 ) {
+    var phase = Phase.WAITING_FOR_PLAYERS
+        set(value) {
+            synchronized(field) {
+                field = value
+                phaseChangeListener?.let { change ->
+                    change(value)
+                }
+            }
+        }
+
+    var lastDrawData: DrawData? = null
 
     private var timerJob: Job? = null
     private var drawingPlayer: Player? = null
@@ -34,15 +45,6 @@ data class Room(
 
     // TODO Get rid of this listener
     private var phaseChangeListener: ((Phase) -> Unit)? = null
-    var phase = Phase.WAITING_FOR_PLAYERS
-        set(value) {
-            synchronized(field) {
-                field = value
-                phaseChangeListener?.let { change ->
-                    change(value)
-                }
-            }
-        }
 
     init {
         setPhaseChangedListener { newPhase ->
@@ -224,6 +226,15 @@ data class Room(
         broadcast(gson.toJson(PlayersList(playersList)))
     }
 
+    private suspend fun finishOffDrawing() {
+        lastDrawData?.let {
+            if (curRoundDrawData.isNotEmpty() && it.motionEvent == 2) {
+                val finishDrawData = it.copy(motionEvent = 1)
+                broadcast(gson.toJson(finishDrawData))
+            }
+        }
+    }
+
     private suspend fun sendWordToPlayer(player: Player) {
         val delay = when (phase){
             Phase.WAITING_FOR_START -> DELAY_WAITING_FOR_START_TO_NEW_ROUND
@@ -271,8 +282,14 @@ data class Room(
             }
             phase = when (phase) {
                 Phase.WAITING_FOR_START -> Phase.NEW_ROUND
-                Phase.NEW_ROUND -> Phase.GAME_RUNNING
-                Phase.GAME_RUNNING -> Phase.SHOW_WORD
+                Phase.NEW_ROUND -> {
+                    word = null
+                    Phase.GAME_RUNNING
+                }
+                Phase.GAME_RUNNING -> {
+                    finishOffDrawing()
+                    Phase.SHOW_WORD
+                }
                 Phase.SHOW_WORD -> Phase.NEW_ROUND
                 else -> Phase.WAITING_FOR_PLAYERS
             }
