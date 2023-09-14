@@ -30,6 +30,8 @@ data class Room(
     // TODO data class instead of pair
     private val leftPlayers = ConcurrentHashMap<String, Pair<Player, Int>>()
 
+    private var curRoundDrawData : List<String> = listOf()
+
     // TODO Get rid of this listener
     private var phaseChangeListener: ((Phase) -> Unit)? = null
     var phase = Phase.WAITING_FOR_PLAYERS
@@ -146,6 +148,7 @@ data class Room(
 
         sendWordToPlayer(player)
         broadcastPlayerStates()
+        sendCurRoundDrawInfoToPlayer(player)
 
         val announcement = Announcement(
             "$username joined the party!",
@@ -195,6 +198,10 @@ data class Room(
         return players.find { it.username == username } != null
     }
 
+    fun addSerializedDrawInfo(drawAction: String) {
+        curRoundDrawData = curRoundDrawData + drawAction
+    }
+
     fun setWordAndSwitchToGameRunning(word: String) {
         this.word = word
         phase = Phase.GAME_RUNNING
@@ -202,6 +209,12 @@ data class Room(
 
     private fun setPhaseChangedListener(listener: (Phase) -> Unit) {
         phaseChangeListener = listener
+    }
+
+    private suspend fun sendCurRoundDrawInfoToPlayer(player: Player) {
+        if (phase == Phase.GAME_RUNNING || phase == Phase.SHOW_WORD) {
+            player.socket.send(Frame.Text(gson.toJson(RoundDrawInfo(curRoundDrawData))))
+        }
     }
 
     private suspend fun broadcastPlayerStates() {
@@ -289,6 +302,7 @@ data class Room(
     }
 
     private fun newRound() {
+        curRoundDrawData = listOf()
         curWords = getRandowWords(3)
         val newWords = NewWords(curWords!!)
         nextDrawingPlayer()

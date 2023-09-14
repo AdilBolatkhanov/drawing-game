@@ -6,6 +6,8 @@ import com.adil.data.models.*
 import com.adil.gson
 import com.adil.other.Constants.TYPE_ANNOUNCEMENT
 import com.adil.other.Constants.TYPE_CHAT_MESSAGE
+import com.adil.other.Constants.TYPE_DISCONNECT_REQUEST
+import com.adil.other.Constants.TYPE_DRAW_ACTION
 import com.adil.other.Constants.TYPE_DRAW_DATA
 import com.adil.other.Constants.TYPE_GAME_STATE
 import com.adil.other.Constants.TYPE_JOIN_ROOM_HANDSHAKE
@@ -55,7 +57,14 @@ fun Route.gameWebSocketRoute() {
                     val room = server.rooms[payload.roomName] ?: return@standardWebSocket
                     if (room.phase == Room.Phase.GAME_RUNNING) {
                         room.broadcastToAllExcept(message, clientId)
+                        room.addSerializedDrawInfo(message)
                     }
+                }
+
+                is DrawAction -> {
+                    val room = server.getRoomWithClientId(clientId) ?: return@standardWebSocket
+                    room.broadcastToAllExcept(message, clientId)
+                    room.addSerializedDrawInfo(message)
                 }
 
                 is ChatMessage -> {
@@ -67,6 +76,10 @@ fun Route.gameWebSocketRoute() {
 
                 is Ping -> {
                     server.players[clientId]?.receivePong()
+                }
+
+                is DisconnectRequest -> {
+                    server.playerLeft(clientId, true)
                 }
             }
         }
@@ -101,6 +114,8 @@ fun Route.standardWebSocket(
                         TYPE_PHASE_CHANGE -> PhaseChange::class.java
                         TYPE_GAME_STATE -> GameState::class.java
                         TYPE_PING -> Ping::class.java
+                        TYPE_DISCONNECT_REQUEST -> DisconnectRequest::class.java
+                        TYPE_DRAW_ACTION -> DrawAction::class.java
                         else -> BaseModel::class.java
                     }
                     val payload = gson.fromJson(message, type)
