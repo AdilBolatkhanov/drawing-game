@@ -20,7 +20,7 @@ data class Player(
         const val PING_FREQUENCY = 3000L
     }
 
-    // TODO Make it private
+    // TODO Make it private and make updates through mutex, synchronize
     var isOnline = true
 
     private var pingJob: Job? = null
@@ -37,6 +37,15 @@ data class Player(
         }
     }
 
+    fun receivePong() {
+        pongTime = System.currentTimeMillis()
+        isOnline = true
+    }
+
+    fun disconnect() {
+        pingJob?.cancel()
+    }
+
     private suspend fun sendPing() {
         pingTime = System.currentTimeMillis()
         socket.send(Frame.Text(gson.toJson(Ping())))
@@ -46,15 +55,6 @@ data class Player(
             server.playerLeft(clientId)
             pingJob?.cancel()
         }
-    }
-
-    fun receivePong() {
-        pongTime = System.currentTimeMillis()
-        isOnline = true
-    }
-
-    fun disconnect() {
-        pingJob?.cancel()
     }
 }
 

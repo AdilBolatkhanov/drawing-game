@@ -39,7 +39,7 @@ data class Room(
     private var curWords: List<String>? = null
     // TODO Remove this index
     private var drawingPlayerIndex = 0
-    private var startTime = 0L
+    private var startTimeOfCurrentPhase = 0L
 
     private val playerRemoveJobs = ConcurrentHashMap<String, Job>()
     // TODO data class instead of pair
@@ -80,7 +80,7 @@ data class Room(
 
     suspend fun checkWordAndNotifyPlayers(message: ChatMessage): Boolean {
         if (isGuessCorrect(message)) {
-            val guessingTime = System.currentTimeMillis() - startTime
+            val guessingTime = System.currentTimeMillis() - startTimeOfCurrentPhase
             val timePercentageLeft = 1L - guessingTime.toFloat() / DELAY_GAME_RUNNING_TO_SHOW_WORD
             val score = GUESS_SCORE_DEFAULT + GUESS_SCORE_PERCENTAGE_MULTIPLIER * timePercentageLeft
             val player = players.find { it.username == message.from }
@@ -270,7 +270,7 @@ data class Room(
         timerJob?.cancel()
         // TODO Our own scope, think about it
         timerJob = GlobalScope.launch {
-            startTime = System.currentTimeMillis()
+            startTimeOfCurrentPhase = System.currentTimeMillis()
             val phaseChange = PhaseChange(
                 phase,
                 ms,
@@ -286,10 +286,7 @@ data class Room(
             }
             phase = when (phase) {
                 Phase.WAITING_FOR_START -> Phase.NEW_ROUND
-                Phase.NEW_ROUND -> {
-                    word = null
-                    Phase.GAME_RUNNING
-                }
+                Phase.NEW_ROUND -> Phase.GAME_RUNNING
                 Phase.GAME_RUNNING -> {
                     finishOffDrawing()
                     Phase.SHOW_WORD
@@ -323,6 +320,7 @@ data class Room(
     }
 
     private fun newRound() {
+        word = null
         curRoundDrawData = listOf()
         curWords = getRandomWords(3)
         val newWords = NewWords(curWords!!)
@@ -335,6 +333,7 @@ data class Room(
     }
 
     private fun gameRunning() {
+        // TODO Move to newRound every field that is related to rounds data and reset
         winningPlayers = listOf()
         val wordToSend = word ?: curWords?.random() ?: words.random()
         word = wordToSend
@@ -370,7 +369,7 @@ data class Room(
             players[drawingPlayerIndex]
         } else players.last()
 
-        if (drawingPlayerIndex < players.size - 1) drawingPlayerIndex++
+        if (drawingPlayerIndex + 1 < players.size) drawingPlayerIndex++
         else drawingPlayerIndex = 0
 
         drawingPlayer?.isDrawing = true
