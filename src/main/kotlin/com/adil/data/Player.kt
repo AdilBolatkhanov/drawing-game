@@ -2,7 +2,6 @@ package com.adil.data
 
 import com.adil.data.models.Ping
 import com.adil.gson
-import com.adil.other.Constants.PING_FREQUENCY
 import com.adil.server
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.GlobalScope
@@ -16,14 +15,17 @@ data class Player(
     var socket: WebSocketSession,
     var isDrawing: Boolean = false,
     var score: Int = 0,
-    var rank: Int = 0,
 ) {
-    private var pingJob: Job? = null
+    companion object {
+        const val PING_FREQUENCY = 3000L
+    }
 
+    // TODO Make it private
+    var isOnline = true
+
+    private var pingJob: Job? = null
     private var pingTime = 0L
     private var pongTime = 0L
-
-    var isOnline = true
 
     fun startPinging() {
         pingJob?.cancel()
@@ -39,7 +41,6 @@ data class Player(
         pingTime = System.currentTimeMillis()
         socket.send(Frame.Text(gson.toJson(Ping())))
         delay(PING_FREQUENCY)
-        // TODO place PING_FREQUENCY here instead
         if (pingTime - pongTime > PING_FREQUENCY) {
             isOnline = false
             server.playerLeft(clientId)

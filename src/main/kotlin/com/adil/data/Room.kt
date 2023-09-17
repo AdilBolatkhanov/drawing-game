@@ -2,7 +2,7 @@ package com.adil.data
 
 import com.adil.data.models.*
 import com.adil.gson
-import com.adil.other.getRandowWords
+import com.adil.other.getRandomWords
 import com.adil.other.matchesWord
 import com.adil.other.transformToUnderscores
 import com.adil.other.words
@@ -17,6 +17,7 @@ data class Room(
     val maxPlayers: Int,
     var players: List<Player> = listOf()
 ) {
+    // TODO Make it private
     var phase = Phase.WAITING_FOR_PLAYERS
         set(value) {
             synchronized(field) {
@@ -27,13 +28,16 @@ data class Room(
             }
         }
 
+    // TODO Make it private
     var lastDrawData: DrawData? = null
 
     private var timerJob: Job? = null
+    // TODO should we get rid of it, and use function to find current drawing player?
     private var drawingPlayer: Player? = null
     private var winningPlayers = listOf<String>()
     private var word: String? = null
     private var curWords: List<String>? = null
+    // TODO Remove this index
     private var drawingPlayerIndex = 0
     private var startTime = 0L
 
@@ -320,7 +324,7 @@ data class Room(
 
     private fun newRound() {
         curRoundDrawData = listOf()
-        curWords = getRandowWords(3)
+        curWords = getRandomWords(3)
         val newWords = NewWords(curWords!!)
         nextDrawingPlayer()
         GlobalScope.launch {

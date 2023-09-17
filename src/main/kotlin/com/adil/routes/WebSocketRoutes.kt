@@ -39,13 +39,14 @@ fun Route.gameWebSocketRoute() {
                         payload.clientId,
                         socket
                     )
+                    // TODO It creates two players -> in server and in room, why?
                     server.playerJoined(player)
                     if (!room.containsPlayer(player.username)) {
                         room.addPlayer(player.clientId, player.username, socket)
                     } else {
+                        // The case when we quickly reconnect during ping delay
                         val playerInRoom = room.players.find { it.clientId == clientId }
                         playerInRoom?.socket = socket
-                        playerInRoom?.startPinging()
                     }
                 }
 
@@ -107,7 +108,7 @@ fun Route.standardWebSocket(
                 if (frame is Frame.Text) {
                     val message = frame.readText()
                     val jsonObject = JsonParser.parseString(message).asJsonObject
-                    // TODO Polymorphic serialization
+                    // TODO Polymorphic serialization and remove unnecessary types that we don't handle
                     val type = when (jsonObject.get("type").asString) {
                         TYPE_CHAT_MESSAGE -> ChatMessage::class.java
                         TYPE_DRAW_DATA -> DrawData::class.java
@@ -129,7 +130,7 @@ fun Route.standardWebSocket(
             e.printStackTrace()
         } finally {
             // Handle disconnects
-
+            // TODO I think we can remove this code because it doesn't remove player
             val playerWithClientId = server.getRoomWithClientId(session.clientId)?.players?.find {
                 it.clientId == session.clientId
             }

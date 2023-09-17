@@ -13,7 +13,7 @@ fun readWordList(fileName: String): List<String> {
     }
 }
 
-fun getRandowWords(amount: Int): List<String> {
+fun getRandomWords(amount: Int): List<String> {
     var curAmount = 0
     val result = mutableSetOf<String>()
     while (curAmount < amount) {

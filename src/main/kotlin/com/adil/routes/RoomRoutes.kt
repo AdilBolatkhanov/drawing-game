@@ -92,6 +92,7 @@ fun Route.joinRoomRoute() {
                         BasicApiResponse(false, "Room not found.")
                     )
                 }
+                // TODO Why username? Why not clientId? Is clientId changing on client side?
                 room.containsPlayer(username) -> {
                     call.respond(
                         HttpStatusCode.OK,
