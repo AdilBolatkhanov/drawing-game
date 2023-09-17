@@ -6,6 +6,7 @@ import com.adil.data.models.*
 import com.adil.gson
 import com.adil.other.Constants.TYPE_ANNOUNCEMENT
 import com.adil.other.Constants.TYPE_CHAT_MESSAGE
+import com.adil.other.Constants.TYPE_CHOSEN_WORD
 import com.adil.other.Constants.TYPE_DISCONNECT_REQUEST
 import com.adil.other.Constants.TYPE_DRAW_ACTION
 import com.adil.other.Constants.TYPE_DRAW_DATA
@@ -113,6 +114,7 @@ fun Route.standardWebSocket(
                         TYPE_ANNOUNCEMENT -> Announcement::class.java
                         TYPE_JOIN_ROOM_HANDSHAKE -> JoinRoomHandshake::class.java
                         TYPE_PHASE_CHANGE -> PhaseChange::class.java
+                        TYPE_CHOSEN_WORD -> ChosenWord::class.java
                         TYPE_GAME_STATE -> GameState::class.java
                         TYPE_PING -> Ping::class.java
                         TYPE_DISCONNECT_REQUEST -> DisconnectRequest::class.java

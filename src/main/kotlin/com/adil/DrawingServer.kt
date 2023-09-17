@@ -18,6 +18,7 @@ class DrawingServer {
         if (immediatelyDisconnect || players[clientId]?.isOnline == false) {
             println("Closing connection to ${players[clientId]?.username}")
             playersRoom?.removePlayer(clientId)
+            players[clientId]?.disconnect()
             players.remove(clientId)
         }
     }

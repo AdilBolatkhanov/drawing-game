@@ -4,7 +4,7 @@ import java.io.File
 
 val words = readWordList("resources/programmers_wordlist.txt")
 
-//TODO suspend
+// TODO suspend
 fun readWordList(fileName: String): List<String> {
     return File(fileName).inputStream().use {
         val words = mutableListOf<String>()
@@ -15,7 +15,7 @@ fun readWordList(fileName: String): List<String> {
 
 fun getRandowWords(amount: Int): List<String> {
     var curAmount = 0
-    val result = mutableListOf<String>()
+    val result = mutableSetOf<String>()
     while (curAmount < amount) {
         val word = words.random()
         if (!result.contains(word)) {
@@ -23,7 +23,7 @@ fun getRandowWords(amount: Int): List<String> {
             curAmount++
         }
     }
-    return result
+    return result.toList()
 }
 
 fun String.transformToUnderscores() =

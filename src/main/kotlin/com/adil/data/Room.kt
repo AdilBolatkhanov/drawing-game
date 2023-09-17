@@ -11,10 +11,10 @@ import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
 
+// TODO Make each instance of this class thread safe - concurrency
 data class Room(
     val name: String,
     val maxPlayers: Int,
-    // TODO Make players list thread safe - concurrency
     var players: List<Player> = listOf()
 ) {
     var phase = Phase.WAITING_FOR_PLAYERS

@@ -31,6 +31,7 @@ fun Application.module() {
             call.sessions.set(DrawingSession(clientId, generateNonce()))
         }
     }
+
     install(WebSockets)
     install(Routing) {
         createRoomRoute()
