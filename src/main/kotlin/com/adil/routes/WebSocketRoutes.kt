@@ -108,15 +108,12 @@ fun Route.standardWebSocket(
                 if (frame is Frame.Text) {
                     val message = frame.readText()
                     val jsonObject = JsonParser.parseString(message).asJsonObject
-                    // TODO Polymorphic serialization and remove unnecessary types that we don't handle
+                    // TODO Polymorphic serialization
                     val type = when (jsonObject.get("type").asString) {
                         TYPE_CHAT_MESSAGE -> ChatMessage::class.java
                         TYPE_DRAW_DATA -> DrawData::class.java
-                        TYPE_ANNOUNCEMENT -> Announcement::class.java
                         TYPE_JOIN_ROOM_HANDSHAKE -> JoinRoomHandshake::class.java
-                        TYPE_PHASE_CHANGE -> PhaseChange::class.java
                         TYPE_CHOSEN_WORD -> ChosenWord::class.java
-                        TYPE_GAME_STATE -> GameState::class.java
                         TYPE_PING -> Ping::class.java
                         TYPE_DISCONNECT_REQUEST -> DisconnectRequest::class.java
                         TYPE_DRAW_ACTION -> DrawAction::class.java
