@@ -1,11 +1,11 @@
 package com.adil.data
 
-import com.adil.data.models.*
 import com.adil.gson
 import com.adil.other.getRandomWords
 import com.adil.other.matchesWord
 import com.adil.other.transformToUnderscores
 import com.adil.other.words
+import com.adil.routes.draw.models.*
 import com.adil.server
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.*
@@ -97,7 +97,7 @@ data class Room(
             val announcement = Announcement(
                 "${message.from} has guessed it!",
                 System.currentTimeMillis(),
-                Announcement.TYPE_PLAYER_GUESSED_WORD
+                Announcement.Type.PLAYER_GUESSED_WORD.value
             )
             broadcast(gson.toJson(announcement))
             val isRoundOver = addWinningPlayer(message.from)
@@ -105,7 +105,7 @@ data class Room(
                 val roundOverAnnouncement = Announcement(
                     "Everybody guessed it! New round is starting..",
                     System.currentTimeMillis(),
-                    Announcement.TYPE_EVERYBODY_GUESSED_IT
+                    Announcement.Type.EVERYBODY_GUESSED_IT.value
                 )
                 broadcast(gson.toJson(roundOverAnnouncement))
             }
@@ -159,7 +159,7 @@ data class Room(
         val announcement = Announcement(
             "$username joined the party!",
             System.currentTimeMillis(),
-            Announcement.TYPE_PLAYER_JOINED
+            Announcement.Type.PLAYER_JOINED.value
         )
         broadcast(gson.toJson(announcement))
         return player
@@ -184,7 +184,7 @@ data class Room(
         val announcement = Announcement(
             "${player.username} left the party",
             System.currentTimeMillis(),
-            Announcement.TYPE_PLAYER_LEFT
+            Announcement.Type.PLAYER_LEFT.value
         )
 
         GlobalScope.launch {

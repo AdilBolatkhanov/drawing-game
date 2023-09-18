@@ -1,9 +1,9 @@
 package com.adil
 
-import com.adil.routes.createRoomRoute
-import com.adil.routes.gameWebSocketRoute
-import com.adil.routes.getRoomsRoute
-import com.adil.routes.joinRoomRoute
+import com.adil.routes.room.createRoomRoute
+import com.adil.routes.draw.gameWebSocketRoute
+import com.adil.routes.room.getRoomsRoute
+import com.adil.routes.room.joinRoomRoute
 import com.adil.session.DrawingSession
 import com.google.gson.Gson
 import io.ktor.application.*

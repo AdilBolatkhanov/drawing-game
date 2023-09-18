@@ -1,19 +1,11 @@
-package com.adil.routes
+package com.adil.routes.draw
 
 import com.adil.data.Player
 import com.adil.data.Room
-import com.adil.data.models.*
 import com.adil.gson
-import com.adil.other.Constants.TYPE_ANNOUNCEMENT
-import com.adil.other.Constants.TYPE_CHAT_MESSAGE
-import com.adil.other.Constants.TYPE_CHOSEN_WORD
-import com.adil.other.Constants.TYPE_DISCONNECT_REQUEST
-import com.adil.other.Constants.TYPE_DRAW_ACTION
-import com.adil.other.Constants.TYPE_DRAW_DATA
-import com.adil.other.Constants.TYPE_GAME_STATE
-import com.adil.other.Constants.TYPE_JOIN_ROOM_HANDSHAKE
-import com.adil.other.Constants.TYPE_PHASE_CHANGE
-import com.adil.other.Constants.TYPE_PING
+import com.adil.routes.draw.models.*
+import com.adil.routes.draw.models.common.FrameType
+import com.adil.routes.draw.models.common.RoomFrame
 import com.adil.server
 import com.adil.session.DrawingSession
 import com.google.gson.JsonParser
@@ -30,19 +22,23 @@ fun Route.gameWebSocketRoute() {
                 is JoinRoomHandshake -> {
                     val room = server.rooms[payload.roomName]
                     if (room == null) {
-                        val gameError = GameError(GameError.ERROR_ROOM_NOT_FOUND)
+                        val gameError = GameError(GameError.ErrorType.ERROR_ROOM_NOT_FOUND.type)
                         socket.send(Frame.Text(gson.toJson(gameError)))
                         return@standardWebSocket
                     }
                     val player = Player(
-                        payload.username,
-                        payload.clientId,
-                        socket
+                        username = payload.username,
+                        clientId = payload.clientId,
+                        socket = socket
                     )
                     // TODO It creates two players -> in server and in room, why?
                     server.playerJoined(player)
                     if (!room.containsPlayer(player.username)) {
-                        room.addPlayer(player.clientId, player.username, socket)
+                        room.addPlayer(
+                            clientId= player.clientId,
+                            username = player.username,
+                            socket = socket
+                        )
                     } else {
                         // The case when we quickly reconnect during ping delay
                         val playerInRoom = room.players.find { it.clientId == clientId }
@@ -94,7 +90,7 @@ fun Route.standardWebSocket(
         socket: DefaultWebSocketServerSession,
         clientId: String,
         message: String,
-        payload: BaseModel
+        payload: RoomFrame
     ) -> Unit
 ) {
     webSocket {
@@ -110,21 +106,21 @@ fun Route.standardWebSocket(
                     val jsonObject = JsonParser.parseString(message).asJsonObject
                     // TODO Polymorphic serialization
                     val type = when (jsonObject.get("type").asString) {
-                        TYPE_CHAT_MESSAGE -> ChatMessage::class.java
-                        TYPE_DRAW_DATA -> DrawData::class.java
-                        TYPE_JOIN_ROOM_HANDSHAKE -> JoinRoomHandshake::class.java
-                        TYPE_CHOSEN_WORD -> ChosenWord::class.java
-                        TYPE_PING -> Ping::class.java
-                        TYPE_DISCONNECT_REQUEST -> DisconnectRequest::class.java
-                        TYPE_DRAW_ACTION -> DrawAction::class.java
-                        else -> BaseModel::class.java
+                        FrameType.TYPE_CHAT_MESSAGE.name -> ChatMessage::class.java
+                        FrameType.TYPE_DRAW_DATA.name -> DrawData::class.java
+                        FrameType.TYPE_JOIN_ROOM_HANDSHAKE.name -> JoinRoomHandshake::class.java
+                        FrameType.TYPE_CHOSEN_WORD.name -> ChosenWord::class.java
+                        FrameType.TYPE_PING.name -> Ping::class.java
+                        FrameType.TYPE_DISCONNECT_REQUEST.name -> DisconnectRequest::class.java
+                        FrameType.TYPE_DRAW_ACTION.name -> DrawAction::class.java
+                        else -> RoomFrame::class.java
                     }
                     val payload = gson.fromJson(message, type)
                     handleFrame(this, session.clientId, message, payload)
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            println(e.localizedMessage)
         }
     }
 }

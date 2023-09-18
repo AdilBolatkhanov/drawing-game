@@ -1,6 +1,6 @@
 package com.adil.data
 
-import com.adil.data.models.Ping
+import com.adil.routes.draw.models.Ping
 import com.adil.gson
 import com.adil.server
 import io.ktor.http.cio.websocket.*

@@ -1,10 +1,10 @@
-package com.adil.routes
+package com.adil.routes.room
 
 import com.adil.data.Room
-import com.adil.data.models.BasicApiResponse
-import com.adil.data.models.CreateRoomRequest
-import com.adil.data.models.JoinRoomRequest
-import com.adil.data.models.RoomResponse
+import com.adil.routes.room.models.BasicApiResponse
+import com.adil.routes.room.models.CreateRoomRequest
+import com.adil.routes.room.models.JoinRoomRequest
+import com.adil.routes.room.models.RoomResponse
 import com.adil.other.Constants.MAX_ROOM_SIZE
 import com.adil.server
 import io.ktor.application.*
@@ -43,8 +43,8 @@ fun Route.createRoomRoute() {
                 return@post
             }
             val room = Room(
-                roomRequest.name,
-                roomRequest.maxPlayers
+                name = roomRequest.name,
+                maxPlayers = roomRequest.maxPlayers
             )
             server.rooms[roomRequest.name] = room
             println("Room created ${roomRequest.name}")
@@ -67,7 +67,11 @@ fun Route.getRoomsRoute() {
                 it.contains(searchQuery, ignoreCase = false)
             }
             val roomResponses = roomsResult.values.map { room ->
-                RoomResponse(room.name, room.maxPlayers, room.players.size)
+                RoomResponse(
+                    name = room.name,
+                    maxPlayers = room.maxPlayers,
+                    playerCount = room.players.size
+                )
             }.sortedBy { it.name }
 
             call.respond(HttpStatusCode.OK, roomResponses)

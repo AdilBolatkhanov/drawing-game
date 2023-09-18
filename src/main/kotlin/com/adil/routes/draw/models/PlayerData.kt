@@ -1,4 +1,4 @@
-package com.adil.data.models
+package com.adil.routes.draw.models
 
 data class PlayerData(
     val username: String,
