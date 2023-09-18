@@ -9,6 +9,8 @@ import com.google.gson.Gson
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.gson.*
+import io.ktor.http.*
+import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
 import io.ktor.util.*
@@ -26,8 +28,7 @@ fun Application.module() {
 
     intercept(ApplicationCallPipeline.Features) {
         if (call.sessions.get<DrawingSession>() == null) {
-            //TODO Handle the case when client_id is not passed
-            val clientId = call.parameters["client_id"] ?: ""
+            val clientId = call.parameters["client_id"] ?: return@intercept call.respond(HttpStatusCode.BadRequest, "Client id is not passed")
             call.sessions.set(DrawingSession(clientId, generateNonce()))
         }
     }

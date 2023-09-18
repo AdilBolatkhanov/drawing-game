@@ -8,6 +8,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class Player(
     val username: String,
@@ -20,11 +22,11 @@ data class Player(
         const val PING_FREQUENCY = 3000L
     }
 
-    // TODO Make it private and make updates through mutex, synchronize
-    var isOnline = true
+    private var isOnline = true
 
     private var pingJob: Job? = null
     private var pingTime = 0L
+    @Volatile
     private var pongTime = 0L
 
     fun startPinging() {

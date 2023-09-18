@@ -82,7 +82,7 @@ fun Route.gameWebSocketRoute() {
                 }
 
                 is DisconnectRequest -> {
-                    server.playerLeft(clientId, true)
+                    server.playerLeft(clientId)
                 }
             }
         }
@@ -128,15 +128,6 @@ fun Route.standardWebSocket(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-        } finally {
-            // Handle disconnects
-            // TODO I think we can remove this code because it doesn't remove player
-            val playerWithClientId = server.getRoomWithClientId(session.clientId)?.players?.find {
-                it.clientId == session.clientId
-            }
-            if (playerWithClientId != null) {
-                server.playerLeft(session.clientId)
-            }
         }
     }
 }

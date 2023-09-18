@@ -3,6 +3,7 @@ package com.adil.routes
 import com.adil.data.Room
 import com.adil.data.models.BasicApiResponse
 import com.adil.data.models.CreateRoomRequest
+import com.adil.data.models.JoinRoomRequest
 import com.adil.data.models.RoomResponse
 import com.adil.other.Constants.MAX_ROOM_SIZE
 import com.adil.server
@@ -18,7 +19,7 @@ fun Route.createRoomRoute() {
         post {
             val roomRequest = call.receiveOrNull<CreateRoomRequest>()
             if (roomRequest == null) {
-                call.respond(HttpStatusCode.BadRequest)
+                call.respond(HttpStatusCode.BadRequest, "Missing parameters")
                 return@post
             }
             if (server.rooms[roomRequest.name] != null) {
@@ -58,7 +59,7 @@ fun Route.getRoomsRoute() {
         get {
             val searchQuery = call.parameters["searchQuery"]
             if (searchQuery == null) {
-                call.respond(HttpStatusCode.BadRequest)
+                call.respond(HttpStatusCode.BadRequest, "Missing parameters")
                 return@get
             }
 
@@ -77,14 +78,13 @@ fun Route.getRoomsRoute() {
 fun Route.joinRoomRoute() {
     route("/api/joinRoom") {
         get {
-            val username = call.parameters["username"]
-            val roomName = call.parameters["roomName"]
-            if (username == null || roomName == null) {
-                call.respond(HttpStatusCode.BadRequest)
+            val request = call.receiveOrNull<JoinRoomRequest>()
+            if (request == null) {
+                call.respond(HttpStatusCode.BadRequest, "Missing parameters")
                 return@get
             }
 
-            val room = server.rooms[roomName]
+            val room = server.rooms[request.roomName]
             when {
                 room == null -> {
                     call.respond(
@@ -93,7 +93,7 @@ fun Route.joinRoomRoute() {
                     )
                 }
                 // TODO Why username? Why not clientId? Is clientId changing on client side?
-                room.containsPlayer(username) -> {
+                room.containsPlayer(request.username) -> {
                     call.respond(
                         HttpStatusCode.OK,
                         BasicApiResponse(false, "A player with this username already joined")
