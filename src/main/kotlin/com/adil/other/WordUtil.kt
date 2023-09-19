@@ -1,10 +1,18 @@
 package com.adil.other
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.io.File
 
-val words = readWordList("resources/programmers_wordlist.txt")
+var words = emptyList<String>()
+const val PROGRAMMERS_WORDLIST = "resources/programmers_wordlist.txt"
+fun fillWords(fileName: String) {
+    GlobalScope.launch(Dispatchers.IO) {
+        words = readWordList(fileName)
+    }
+}
 
-// TODO suspend
 fun readWordList(fileName: String): List<String> {
     return File(fileName).inputStream().use {
         val words = mutableListOf<String>()

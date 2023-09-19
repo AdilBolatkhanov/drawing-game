@@ -22,7 +22,7 @@ fun Route.gameWebSocketRoute() {
                 is JoinRoomHandshake -> {
                     val room = server.rooms[payload.roomName]
                     if (room == null) {
-                        val gameError = GameError(GameError.ErrorType.ERROR_ROOM_NOT_FOUND.type)
+                        val gameError = GameError(GameError.ErrorType.ERROR_ROOM_NOT_FOUND)
                         socket.send(Frame.Text(gson.toJson(gameError)))
                         return@standardWebSocket
                     }

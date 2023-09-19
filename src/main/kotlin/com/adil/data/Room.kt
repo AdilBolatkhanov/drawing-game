@@ -12,6 +12,7 @@ import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
 
 // TODO Make each instance of this class thread safe - concurrency
+// TODO Think about tradeoffs between immutable and mutable data classes in project
 data class Room(
     val name: String,
     val maxPlayers: Int,
@@ -95,17 +96,17 @@ data class Room(
             broadcastPlayerStates()
 
             val announcement = Announcement(
-                "${message.from} has guessed it!",
-                System.currentTimeMillis(),
-                Announcement.Type.PLAYER_GUESSED_WORD.value
+                message = "${message.from} has guessed it!",
+                timestamp = System.currentTimeMillis(),
+                announcementType = Announcement.Type.PLAYER_GUESSED_WORD
             )
             broadcast(gson.toJson(announcement))
             val isRoundOver = addWinningPlayer(message.from)
             if (isRoundOver){
                 val roundOverAnnouncement = Announcement(
-                    "Everybody guessed it! New round is starting..",
-                    System.currentTimeMillis(),
-                    Announcement.Type.EVERYBODY_GUESSED_IT.value
+                    message = "Everybody guessed it! New round is starting..",
+                    timestamp = System.currentTimeMillis(),
+                    announcementType = Announcement.Type.EVERYBODY_GUESSED_IT
                 )
                 broadcast(gson.toJson(roundOverAnnouncement))
             }
@@ -157,9 +158,9 @@ data class Room(
         sendCurRoundDrawInfoToPlayer(player)
 
         val announcement = Announcement(
-            "$username joined the party!",
-            System.currentTimeMillis(),
-            Announcement.Type.PLAYER_JOINED.value
+            message = "$username joined the party!",
+            timestamp = System.currentTimeMillis(),
+            announcementType = Announcement.Type.PLAYER_JOINED
         )
         broadcast(gson.toJson(announcement))
         return player
@@ -182,9 +183,9 @@ data class Room(
         }
 
         val announcement = Announcement(
-            "${player.username} left the party",
-            System.currentTimeMillis(),
-            Announcement.Type.PLAYER_LEFT.value
+            message = "${player.username} left the party",
+            timestamp = System.currentTimeMillis(),
+            announcementType = Announcement.Type.PLAYER_LEFT
         )
 
         GlobalScope.launch {
@@ -231,9 +232,9 @@ data class Room(
     }
 
     private suspend fun finishOffDrawing() {
-        lastDrawData?.let {
-            if (curRoundDrawData.isNotEmpty() && it.motionEvent == 2) {
-                val finishDrawData = it.copy(motionEvent = 1)
+        lastDrawData?.let { drawData ->
+            if (curRoundDrawData.isNotEmpty() && drawData.motionEvent == MotionType.MOVE) {
+                val finishDrawData = drawData.copy(motionEvent = MotionType.DOWN)
                 broadcast(gson.toJson(finishDrawData))
             }
         }
@@ -247,7 +248,7 @@ data class Room(
             Phase.SHOW_WORD -> DELAY_SHOW_WORD_TO_NEW_ROUND
             else -> 0L
         }
-        val phaseChange = PhaseChange(phase, delay, drawingPlayer?.username)
+        val phaseChange = PhaseChange(phase = phase, time = delay, drawingPlayer = drawingPlayer?.username)
 
         word?.let { curWord ->
             drawingPlayer?.let { drawingPlayer ->
@@ -272,12 +273,12 @@ data class Room(
         timerJob = GlobalScope.launch {
             startTimeOfCurrentPhase = System.currentTimeMillis()
             val phaseChange = PhaseChange(
-                phase,
-                ms,
-                drawingPlayer?.username
+                phase = phase,
+                time = ms,
+                drawingPlayer = drawingPlayer?.username
             )
-            repeat((ms / UPDATE_TIME_FREQUENCY).toInt()) {
-                if (it != 0) {
+            repeat((ms / UPDATE_TIME_FREQUENCY).toInt()) { index ->
+                if (index != 0) {
                     phaseChange.phase = null
                 }
                 broadcast(gson.toJson(phaseChange))
@@ -301,8 +302,8 @@ data class Room(
         // TODO Our own scope, think about it
         GlobalScope.launch {
             val phaseChange = PhaseChange(
-                Phase.WAITING_FOR_PLAYERS,
-                DELAY_WAITING_FOR_START_TO_NEW_ROUND
+                phase = Phase.WAITING_FOR_PLAYERS,
+                time = DELAY_WAITING_FOR_START_TO_NEW_ROUND
             )
             broadcast(gson.toJson(phaseChange))
         }
@@ -312,8 +313,8 @@ data class Room(
         GlobalScope.launch {
             timeAndNotify(DELAY_WAITING_FOR_START_TO_NEW_ROUND)
             val phaseChange = PhaseChange(
-                Phase.WAITING_FOR_START,
-                DELAY_WAITING_FOR_START_TO_NEW_ROUND
+                phase = Phase.WAITING_FOR_START,
+                time = DELAY_WAITING_FOR_START_TO_NEW_ROUND
             )
             broadcast(gson.toJson(phaseChange))
         }
@@ -405,7 +406,7 @@ data class Room(
                 broadcast(gson.toJson(chosenWord))
             }
             timeAndNotify(DELAY_SHOW_WORD_TO_NEW_ROUND)
-            val phaseChange = PhaseChange(Phase.SHOW_WORD, DELAY_SHOW_WORD_TO_NEW_ROUND)
+            val phaseChange = PhaseChange(phase = Phase.SHOW_WORD, time = DELAY_SHOW_WORD_TO_NEW_ROUND)
             broadcast(gson.toJson(phaseChange))
         }
     }

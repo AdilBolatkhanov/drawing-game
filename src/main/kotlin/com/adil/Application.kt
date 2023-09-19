@@ -1,7 +1,9 @@
 package com.adil
 
-import com.adil.routes.room.createRoomRoute
+import com.adil.other.PROGRAMMERS_WORDLIST
+import com.adil.other.fillWords
 import com.adil.routes.draw.gameWebSocketRoute
+import com.adil.routes.room.createRoomRoute
 import com.adil.routes.room.getRoomsRoute
 import com.adil.routes.room.joinRoomRoute
 import com.adil.session.DrawingSession
@@ -22,6 +24,8 @@ val server = DrawingServer()
 val gson = Gson()
 
 fun Application.module() {
+    fillWords(PROGRAMMERS_WORDLIST)
+
     install(Sessions) {
         cookie<DrawingSession>("SESSION")
     }
