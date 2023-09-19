@@ -33,7 +33,7 @@ fun Application.module() {
     intercept(ApplicationCallPipeline.Features) {
         if (call.sessions.get<DrawingSession>() == null) {
             val clientId = call.parameters["client_id"] ?: return@intercept call.respond(HttpStatusCode.BadRequest, "Client id is not passed")
-            call.sessions.set(DrawingSession(clientId, generateNonce()))
+            call.sessions.set(DrawingSession(clientId = clientId, sessionId = generateNonce()))
         }
     }
 

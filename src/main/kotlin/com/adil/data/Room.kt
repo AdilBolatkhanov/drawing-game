@@ -226,7 +226,7 @@ data class Room(
 
     private suspend fun broadcastPlayerStates() {
         val playersList = players.sortedByDescending { it.score }.mapIndexed { index, player ->
-            PlayerData(player.username, player.isDrawing, player.score, index + 1)
+            PlayerData(username = player.username, isDrawing = player.isDrawing, score = player.score, rank = index + 1)
         }
         broadcast(gson.toJson(PlayersList(playersList)))
     }
@@ -253,9 +253,9 @@ data class Room(
         word?.let { curWord ->
             drawingPlayer?.let { drawingPlayer ->
                 val gameState = GameState(
-                    drawingPlayer.username,
+                    drawingPlayer = drawingPlayer.username,
                     // TODO Maybe just check player == drawingPlayer
-                    if (player.isDrawing || phase == Phase.SHOW_WORD) {
+                    word = if (player.isDrawing || phase == Phase.SHOW_WORD) {
                         curWord
                     } else {
                         curWord.transformToUnderscores()
@@ -341,12 +341,12 @@ data class Room(
         val wordWithUnderscores = wordToSend.transformToUnderscores()
         val drawingUsername = (drawingPlayer ?: players.random()).username
         val gameStateForDrawingPlayer = GameState(
-            drawingUsername,
-            wordToSend
+            drawingPlayer = drawingUsername,
+            word = wordToSend
         )
         val gameStateForGuessingPlayers = GameState(
-            drawingUsername,
-            wordWithUnderscores
+            drawingPlayer = drawingUsername,
+            word = wordWithUnderscores
         )
         GlobalScope.launch {
             broadcastToAllExcept(
@@ -401,8 +401,8 @@ data class Room(
                 }
             }
             broadcastPlayerStates()
-            word?.let {
-                val chosenWord = ChosenWord(it, name)
+            word?.let { targetWord ->
+                val chosenWord = ChosenWord(chosenWord = targetWord, roomName = name)
                 broadcast(gson.toJson(chosenWord))
             }
             timeAndNotify(DELAY_SHOW_WORD_TO_NEW_ROUND)
