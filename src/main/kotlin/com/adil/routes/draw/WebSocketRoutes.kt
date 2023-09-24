@@ -1,7 +1,6 @@
 package com.adil.routes.draw
 
 import com.adil.data.Player
-import com.adil.data.Room
 import com.adil.gson
 import com.adil.routes.draw.models.*
 import com.adil.routes.draw.models.common.FrameType
@@ -31,7 +30,7 @@ fun Route.gameWebSocketRoute() {
                         clientId = payload.clientId,
                         socket = socket
                     )
-                    // TODO It creates two players -> in server and in room, why?
+                    // It creates two players -> in server and in room: Server - for pinging logic, room - for sending messages to client
                     server.playerJoined(player)
                     if (!room.containsPlayer(player.username)) {
                         room.addPlayer(
@@ -53,17 +52,12 @@ fun Route.gameWebSocketRoute() {
 
                 is DrawData -> {
                     val room = server.rooms[payload.roomName] ?: return@standardWebSocket
-                    if (room.phase == Room.Phase.GAME_RUNNING) {
-                        room.broadcastToAllExcept(message, clientId)
-                        room.addSerializedDrawInfo(message)
-                    }
-                    room.lastDrawData = payload
+                    room.drawDataReceived(message = message, clientId = clientId, payload = payload)
                 }
 
                 is DrawAction -> {
-                    val room = server.getRoomWithClientId(clientId) ?: return@standardWebSocket
-                    room.broadcastToAllExcept(message, clientId)
-                    room.addSerializedDrawInfo(message)
+                    val room = server.rooms[payload.roomName] ?: return@standardWebSocket
+                    room.drawActionReceived(message, clientId)
                 }
 
                 is ChatMessage -> {

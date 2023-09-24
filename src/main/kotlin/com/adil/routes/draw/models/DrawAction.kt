@@ -5,5 +5,6 @@ import com.adil.routes.draw.models.common.RoomFrame
 
 data class DrawAction(
     val action: String,
+    val roomName: String,
     override val type: FrameType = FrameType.TYPE_DRAW_ACTION
 ) : RoomFrame

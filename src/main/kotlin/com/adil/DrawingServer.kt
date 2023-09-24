@@ -9,6 +9,7 @@ class DrawingServer {
     val players = ConcurrentHashMap<String, Player>()
 
     fun playerJoined(player: Player) {
+        players[player.clientId]?.disconnect()
         players[player.clientId] = player
         player.startPinging()
     }
@@ -21,7 +22,7 @@ class DrawingServer {
         players.remove(clientId)
     }
 
-    fun getRoomWithClientId(clientId: String): Room? {
+    private fun getRoomWithClientId(clientId: String): Room? {
         val filteredRooms = rooms.filterValues { room ->
             room.players.find { player ->
                 player.clientId == clientId
