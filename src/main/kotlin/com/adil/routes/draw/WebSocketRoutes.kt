@@ -30,19 +30,7 @@ fun Route.gameWebSocketRoute() {
                         clientId = payload.clientId,
                         socket = socket
                     )
-                    // It creates two players -> in server and in room: Server - for pinging logic, room - for sending messages to client
-                    server.playerJoined(player)
-                    if (!room.containsPlayer(player.username)) {
-                        room.addPlayer(
-                            clientId= player.clientId,
-                            username = player.username,
-                            socket = socket
-                        )
-                    } else {
-                        // The case when we quickly reconnect during ping delay
-                        val playerInRoom = room.players.find { it.clientId == clientId }
-                        playerInRoom?.socket = socket
-                    }
+                    server.playerJoined(player, room)
                 }
 
                 is ChosenWord -> {
@@ -68,7 +56,7 @@ fun Route.gameWebSocketRoute() {
                 }
 
                 is Ping -> {
-                    server.players[clientId]?.receivePong()
+                    server.playerReceivedPing(clientId)
                 }
 
                 is DisconnectRequest -> {

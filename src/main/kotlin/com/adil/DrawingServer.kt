@@ -6,27 +6,31 @@ import java.util.concurrent.ConcurrentHashMap
 
 class DrawingServer {
     val rooms = ConcurrentHashMap<String, Room>()
-    val players = ConcurrentHashMap<String, Player>()
 
-    fun playerJoined(player: Player) {
-        players[player.clientId]?.disconnect()
-        players[player.clientId] = player
-        player.startPinging()
+    suspend fun playerJoined(player: Player, room: Room) {
+        if (!room.players.containsKey(player.clientId)) {
+            room.addPlayer(player)
+        } else {
+            // The case when we quickly reconnect during ping delay
+            val playerInRoom = room.players[player.clientId]
+            playerInRoom?.socket = player.socket
+        }
     }
 
     fun playerLeft(clientId: String) {
         val playersRoom = getRoomWithClientId(clientId)
-        println("Closing connection to ${players[clientId]?.username}")
+        println("Closing connection to ${playersRoom?.players?.get(clientId)?.username}")
         playersRoom?.removePlayer(clientId)
-        players[clientId]?.disconnect()
-        players.remove(clientId)
+    }
+
+    fun playerReceivedPing(clientId: String) {
+        val playersRoom = getRoomWithClientId(clientId)
+        playersRoom?.players?.get(clientId)?.receivePong()
     }
 
     private fun getRoomWithClientId(clientId: String): Room? {
         val filteredRooms = rooms.filterValues { room ->
-            room.players.find { player ->
-                player.clientId == clientId
-            } != null
+            room.players[clientId] != null
         }
         return if (filteredRooms.values.isEmpty()) {
             null

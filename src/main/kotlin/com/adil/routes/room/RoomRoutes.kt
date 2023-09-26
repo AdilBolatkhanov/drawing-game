@@ -1,11 +1,11 @@
 package com.adil.routes.room
 
 import com.adil.data.Room
+import com.adil.other.Constants.MAX_ROOM_SIZE
 import com.adil.routes.room.models.BasicApiResponse
 import com.adil.routes.room.models.CreateRoomRequest
 import com.adil.routes.room.models.JoinRoomRequest
 import com.adil.routes.room.models.RoomResponse
-import com.adil.other.Constants.MAX_ROOM_SIZE
 import com.adil.server
 import io.ktor.application.*
 import io.ktor.http.*
@@ -96,13 +96,14 @@ fun Route.joinRoomRoute() {
                         BasicApiResponse(false, "Room not found.")
                     )
                 }
-                // TODO Why username? Why not clientId? Is clientId changing on client side?
-                room.containsPlayer(request.username) -> {
+
+                room.players.containsKey(request.clientId) -> {
                     call.respond(
                         HttpStatusCode.OK,
-                        BasicApiResponse(false, "A player with this username already joined")
+                        BasicApiResponse(false, "A player with this client id already joined")
                     )
                 }
+                // TODO Handle the case when multiple users join simultaneously
                 room.players.size >= room.maxPlayers -> {
                     call.respond(
                         HttpStatusCode.OK,

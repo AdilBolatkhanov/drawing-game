@@ -8,13 +8,14 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 
 data class Player(
     val username: String,
     val clientId: String,
     var socket: WebSocketSession,
     var isDrawing: Boolean = false,
-    var score: Int = 0,
+    val score: AtomicInteger = AtomicInteger(0),
 ) {
     companion object {
         const val PING_FREQUENCY = 3000L

@@ -1,6 +1,6 @@
 package com.adil.routes.room.models
 
 data class JoinRoomRequest(
-    val username: String,
+    val clientId: String,
     val roomName: String
 )
