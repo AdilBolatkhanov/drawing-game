@@ -1,30 +1,29 @@
 package com.adil.data
 
-import com.adil.data.models.Ping
 import com.adil.gson
+import com.adil.routes.draw.models.Ping
 import com.adil.server
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 
 data class Player(
     val username: String,
     val clientId: String,
     var socket: WebSocketSession,
     var isDrawing: Boolean = false,
-    var score: Int = 0,
+    val score: AtomicInteger = AtomicInteger(0),
 ) {
     companion object {
         const val PING_FREQUENCY = 3000L
     }
 
-    // TODO Make it private and make updates through mutex, synchronize
-    var isOnline = true
-
     private var pingJob: Job? = null
     private var pingTime = 0L
+    @Volatile
     private var pongTime = 0L
 
     fun startPinging() {
@@ -39,7 +38,6 @@ data class Player(
 
     fun receivePong() {
         pongTime = System.currentTimeMillis()
-        isOnline = true
     }
 
     fun disconnect() {
@@ -51,7 +49,6 @@ data class Player(
         socket.send(Frame.Text(gson.toJson(Ping())))
         delay(PING_FREQUENCY)
         if (pingTime - pongTime > PING_FREQUENCY) {
-            isOnline = false
             server.playerLeft(clientId)
             pingJob?.cancel()
         }

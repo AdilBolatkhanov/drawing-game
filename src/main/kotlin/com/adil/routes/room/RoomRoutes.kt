@@ -1,10 +1,11 @@
-package com.adil.routes
+package com.adil.routes.room
 
 import com.adil.data.Room
-import com.adil.data.models.BasicApiResponse
-import com.adil.data.models.CreateRoomRequest
-import com.adil.data.models.RoomResponse
 import com.adil.other.Constants.MAX_ROOM_SIZE
+import com.adil.routes.room.models.BasicApiResponse
+import com.adil.routes.room.models.CreateRoomRequest
+import com.adil.routes.room.models.JoinRoomRequest
+import com.adil.routes.room.models.RoomResponse
 import com.adil.server
 import io.ktor.application.*
 import io.ktor.http.*
@@ -18,7 +19,7 @@ fun Route.createRoomRoute() {
         post {
             val roomRequest = call.receiveOrNull<CreateRoomRequest>()
             if (roomRequest == null) {
-                call.respond(HttpStatusCode.BadRequest)
+                call.respond(HttpStatusCode.BadRequest, "Missing parameters")
                 return@post
             }
             if (server.rooms[roomRequest.name] != null) {
@@ -42,8 +43,8 @@ fun Route.createRoomRoute() {
                 return@post
             }
             val room = Room(
-                roomRequest.name,
-                roomRequest.maxPlayers
+                name = roomRequest.name,
+                maxPlayers = roomRequest.maxPlayers
             )
             server.rooms[roomRequest.name] = room
             println("Room created ${roomRequest.name}")
@@ -58,7 +59,7 @@ fun Route.getRoomsRoute() {
         get {
             val searchQuery = call.parameters["searchQuery"]
             if (searchQuery == null) {
-                call.respond(HttpStatusCode.BadRequest)
+                call.respond(HttpStatusCode.BadRequest, "Missing parameters")
                 return@get
             }
 
@@ -66,7 +67,11 @@ fun Route.getRoomsRoute() {
                 it.contains(searchQuery, ignoreCase = false)
             }
             val roomResponses = roomsResult.values.map { room ->
-                RoomResponse(room.name, room.maxPlayers, room.players.size)
+                RoomResponse(
+                    name = room.name,
+                    maxPlayers = room.maxPlayers,
+                    playerCount = room.players.size
+                )
             }.sortedBy { it.name }
 
             call.respond(HttpStatusCode.OK, roomResponses)
@@ -77,14 +82,13 @@ fun Route.getRoomsRoute() {
 fun Route.joinRoomRoute() {
     route("/api/joinRoom") {
         get {
-            val username = call.parameters["username"]
-            val roomName = call.parameters["roomName"]
-            if (username == null || roomName == null) {
-                call.respond(HttpStatusCode.BadRequest)
+            val request = call.receiveOrNull<JoinRoomRequest>()
+            if (request == null) {
+                call.respond(HttpStatusCode.BadRequest, "Missing parameters")
                 return@get
             }
 
-            val room = server.rooms[roomName]
+            val room = server.rooms[request.roomName]
             when {
                 room == null -> {
                     call.respond(
@@ -92,13 +96,14 @@ fun Route.joinRoomRoute() {
                         BasicApiResponse(false, "Room not found.")
                     )
                 }
-                // TODO Why username? Why not clientId? Is clientId changing on client side?
-                room.containsPlayer(username) -> {
+
+                room.players.containsKey(request.clientId) -> {
                     call.respond(
                         HttpStatusCode.OK,
-                        BasicApiResponse(false, "A player with this username already joined")
+                        BasicApiResponse(false, "A player with this client id already joined")
                     )
                 }
+                // TODO Handle the case when multiple users join simultaneously
                 room.players.size >= room.maxPlayers -> {
                     call.respond(
                         HttpStatusCode.OK,
