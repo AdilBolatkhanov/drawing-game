@@ -1,4 +1,4 @@
-package com.adil.data.models
+package com.adil.routes.room.models
 
 data class RoomResponse(
     val name: String,
